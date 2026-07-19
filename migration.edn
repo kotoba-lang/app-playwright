@@ -1,0 +1,1 @@
+{:schema "etzhayyim.migration/v1" :source {:repository "etzhayyim/root" :revision "f9432ab5dd6554faa47e49b695e8ff508f824be6" :path "60-apps/etzhayyim-project-playwright" :tree "78561c4953fa333cbfff5fc833fc5cbe8e0bfb4a" :tracked-files 21 :bytes 73932} :destination {:repository "etzhayyim/com-etzhayyim-app-playwright"} :identity {:allowed-additions ["README.edn" "migration.edn"]}}

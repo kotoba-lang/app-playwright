@@ -1,0 +1,50 @@
+{
+  "@context": "https://etzhayyim.com/ns/kotodama/v1",
+  "@id": "did:web:playwright.etzhayyim.com",
+  "name": "playwright",
+  "nanoid": "pl4y1t8r",
+  "performerType": "service",
+  "runtimeType": "worker",
+  "sensitivity": "internal",
+  "source": "custom",
+  "version": "0.1.0",
+  "build": { "guestLanguage": "ts" },
+  "component": { "path": "src/app.ts" },
+  "profile": {
+    "displayName": "Playwright — Browser Automation Primitives",
+    "description": "XRPC-wrapped Playwright primitives. Two execution targets: local Mac daemon (headed/headless, Keychain/1Password access) OR cf-browser (CF Browser Rendering via com.etzhayyim.apps.cloudflareBrowserRender). Composed from com.etzhayyim.apps.bpmn serviceTasks. Credentials via valueRef (vault:// / keychain: / 1password:// / env: / literal:).",
+    "isBot": true,
+    "agentType": "capability",
+    "operator": "etzhayyim.com",
+    "capabilities": ["browser-goto", "browser-fill", "browser-click", "browser-scrape", "browser-snapshot", "browser-screenshot", "session-management", "value-ref-resolution"]
+  },
+  "interfaces": {
+    "package": "etzhayyim:playwright@0.1.0",
+    "requires": ["etzhayyim:collection/collection@1.0.0", "etzhayyim:vault/vault@1.0.0"]
+  },
+  "governance": { "raci": "responsible", "classification": "internal" },
+  "convoSystemPrompt": "You are the Playwright primitives actor. You execute atomic browser operations (goto/fill/click/scrape/snapshot) requested by BPMN processes. Credentials come via valueRef only — you never receive plaintext credentials in XRPC payloads. Session state lives in D1 with 30-minute TTL. For cf-browser target, delegate to com.etzhayyim.apps.cloudflareBrowserRender.",
+  "duties": ["capability-provisioning"],
+  "kpi": ["session-success-rate", "avg-op-latency-ms"],
+  "deploy": {},
+  "routes": [ { "host": "playwright.etzhayyim.com", "paths": ["/"], "tls": true } ],
+  "space": {
+    "name": "Playwright Primitives",
+    "joinRule": "public",
+    "historyVisibility": "shared",
+    "channels": [
+      { "name": "session-log", "kind": "public", "default": true }
+    ]
+  },
+  "triggers": {
+    "subscribeRepos": {
+      "collections": [
+        "com.etzhayyim.apps.playwright.session",
+        "com.etzhayyim.apps.playwright.action",
+        "com.etzhayyim.apps.playwright.artifact"
+      ]
+    }
+  },
+  "ui": { "accent": "#2ead33", "icon": "🎭", "ssrRoutes": { "apps": "etzhayyim.playwright.v1.PlaywrightService/playwright.tools" } },
+  "uiType": "appview"
+}

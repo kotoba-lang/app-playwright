@@ -1,0 +1,146 @@
+(ns playwright.app
+  "etzhayyim-wasm-playwright-pl4y1t8r appview — reagent + re-frame, view built
+  from jp-go-dds (デジタル庁デザインシステム) hiccup.
+
+  This is a faithful port of the previous SvelteKit scaffold
+  (`svelte/src/routes/+page.svelte`): a static info page describing this
+  appview surface itself — its title/project/name/kind, its declared route
+  count and public routes, its declared runtime vars, whether xrpc is
+  configured, and the source path of the page that renders all of this.
+  The Svelte page never called the dispatcher Worker (`../src/app.ts`) — it
+  was pure static markup describing the surface's own metadata, and this
+  port adds no browser-automation functionality that was not already there.
+
+  The Svelte scaffold's `routeCount`/`routes`/`vars` fields were stale empty
+  literals (0 / [] / []); this port corrects them from the component's
+  actual `wrangler.jsonc` (`routes[].pattern` and the `vars` map keys), same
+  as the landed reference this was copied from
+  (`cloud-itonami/app-tia`'s `tia-mcp-component/cljs`).
+
+  Backend TypeScript is unaffected by this migration:
+  `../src/app.ts` (the dispatcher Worker, XRPC methods for
+  goto/fill/click/scrape/snapshot/screenshot/etc. routed to a local Mac
+  daemon or CF Browser Rendering) is untouched. The one other TypeScript
+  file that lived under the deleted `svelte/` tree —
+  `svelte/src/routes/xrpc/[...path]/+server.ts`, a SvelteKit server route
+  that proxied XRPC calls to AGENTGATEWAY_MCP_ROUTER_URL — was backend/XRPC
+  logic, not frontend markup, so it was moved rather than deleted; see
+  `../src/xrpc-proxy.ts` for its unmodified body and a note on why it is
+  not wired to anything right now."
+  (:require [reagent.dom :as rdom]
+            [re-frame.core :as rf]
+            [jp-go-dds.core :as dds]))
+
+;; -- db ------------------------------------------------------------------
+;;
+;; Mirrors the `const app = {...}` object the Svelte scaffold declared
+;; inline in its <script> block, field for field. The only field that
+;; changes value is :relative-path — it is self-referential ("where does
+;; this page's own source live"), and the source moved from
+;; svelte/src/routes/+page.svelte to here. :route-count, :routes, and :vars
+;; are corrected from wrangler.jsonc (the Svelte scaffold had stale
+;; routeCount 0 / empty routes / empty vars arrays there).
+
+(def default-db
+  {:title "Playwright Pl4y1t8r"
+   :project "etzhayyim-project-playwright"
+   :name "etzhayyim-wasm-playwright-pl4y1t8r"
+   :kind "appview"
+   :route-count 2
+   :routes ["pl4y1t8r.etzhayyim.com/*" "playwright.etzhayyim.com/*"]
+   :vars ["AGENTGATEWAY_MCP_ROUTER_URL" "APP_CAPABILITIES" "APP_DEPLOY_AT"
+          "APP_DESCRIPTION" "APP_DISPLAY_NAME" "APP_EMBED_URL"
+          "APP_FRAMEWORK" "APP_NANOID" "APP_PERFORMER_TYPE" "APP_SOURCE"
+          "APP_UI_TYPE" "APP_VERSION" "INTERFACES_REQUIRES"]
+   :xrpc? true
+   :relative-path "appview/etzhayyim-wasm-playwright-pl4y1t8r/cljs/src/playwright/app.cljs"})
+
+(rf/reg-event-db
+ :initialize-db
+ (fn [_ _] default-db))
+
+(rf/reg-sub :title (fn [db _] (:title db)))
+(rf/reg-sub :project (fn [db _] (:project db)))
+(rf/reg-sub :name (fn [db _] (:name db)))
+(rf/reg-sub :kind (fn [db _] (:kind db)))
+(rf/reg-sub :route-count (fn [db _] (:route-count db)))
+(rf/reg-sub :routes (fn [db _] (:routes db)))
+(rf/reg-sub :vars (fn [db _] (:vars db)))
+(rf/reg-sub :xrpc? (fn [db _] (:xrpc? db)))
+(rf/reg-sub :relative-path (fn [db _] (:relative-path db)))
+
+;; -- view ------------------------------------------------------------------
+;;
+;; Structure mirrors the original four sections 1:1 (top / facts / panels /
+;; source), rebuilt from jp-go-dds primitives instead of the bespoke dark
+;; CSS the Svelte scaffold shipped (`.top` / `.facts` / `.panel` rules) —
+;; the visual language is the shared design system's now, not a hand-rolled
+;; one, per ADR-2608260900.
+
+(defn- fact-card [label value]
+  (dds/card
+   [:span {:class "dds-ext-lead"} label]
+   [:strong {:style {:display "block" :margin-top "0.5rem"
+                      :overflow-wrap "anywhere"}}
+    value]))
+
+(defn- routes-panel [routes]
+  (dds/card
+   (dds/heading 2 "Public Routes" {:size "20"})
+   (if (seq routes)
+     (into [:ul {:class "dds-ext-stack" :style {:margin-top "0.75rem"}}]
+           (map (fn [route] [:li route]) routes))
+     [:p {:class "dds-ext-lead"}
+      "No public route is declared next to this app surface."])))
+
+(defn- vars-panel [vars]
+  (dds/card
+   (dds/heading 2 "Runtime Bindings" {:size "20"})
+   (if (seq vars)
+     (into [:div {:class "dds-ext-row" :style {:margin-top "0.75rem"}}]
+           (map (fn [v] (dds/chip-label v {:color "gray"})) vars))
+     [:p {:class "dds-ext-lead"}
+      "No public vars are declared in the nearest wrangler config."])))
+
+(defn- source-panel [path]
+  (dds/card
+   (dds/heading 2 "Source" {:size "20"})
+   [:p {:style {:font-family "var(--font-family-mono)"
+                :overflow-wrap "anywhere"
+                :margin-top "0.75rem"}}
+    path]))
+
+(defn app-view []
+  (let [title @(rf/subscribe [:title])
+        project @(rf/subscribe [:project])
+        component-name @(rf/subscribe [:name])
+        kind @(rf/subscribe [:kind])
+        route-count @(rf/subscribe [:route-count])
+        routes @(rf/subscribe [:routes])
+        vars @(rf/subscribe [:vars])
+        xrpc? @(rf/subscribe [:xrpc?])
+        relative-path @(rf/subscribe [:relative-path])]
+    (dds/container
+     (dds/section {}
+       [:p {:class "dds-ext-lead"} (str "Cloudflare " kind)]
+       (dds/heading 1 title)
+       [:p {:style {:font-family "var(--font-family-mono)"
+                    :overflow-wrap "anywhere"
+                    :margin-top "0.5rem"}}
+        component-name])
+     (dds/section {}
+       (dds/grid {:min "12rem"}
+         (fact-card "Project" project)
+         (fact-card "Routes" (str route-count))
+         (fact-card "XRPC" (if xrpc? "enabled" "not configured"))))
+     (dds/section {}
+       (dds/stack
+        (routes-panel routes)
+        (vars-panel vars)
+        (source-panel relative-path))))))
+
+;; -- init --------------------------------------------------------------------
+
+(defn ^:export main []
+  (rf/dispatch-sync [:initialize-db])
+  (rdom/render [app-view] (js/document.getElementById "app")))

@@ -1,6 +1,14 @@
 {
   "name": "kotodama-pl4y1t8r",
-  "main": "svelte/.svelte-kit/cloudflare/_worker.js",
+  // "main" dropped: it pointed at the SvelteKit Cloudflare adapter's build
+  // output (svelte/.svelte-kit/cloudflare/_worker.js), which no longer
+  // exists after the Svelte → ClojureScript frontend migration (see
+  // ../cljs/). "../src/app.ts" (the documented dispatcher Worker) was
+  // considered as a replacement but does not call `env.ASSETS.fetch()`, so
+  // pointing `main` at it would put a worker in front of the static assets
+  // with nothing serving them. Frontend is served as plain static assets
+  // instead (see "assets" below). UNVERIFIED: no `wrangler deploy`/`dev` was
+  // run as part of this migration.
   "compatibility_date": "2025-03-17",
   "compatibility_flags": [
     "nodejs_compat",
@@ -12,7 +20,7 @@
     "APP_DESCRIPTION": "Browser automation primitives XRPC — goto/fill/click/scrape/snapshot over local daemon OR cf-browser",
     "APP_DISPLAY_NAME": "Playwright",
     "APP_EMBED_URL": "https://pl4y1t8r.etzhayyim.com/?embed=1",
-    "APP_FRAMEWORK": "sveltekit-edge-bff",
+    "APP_FRAMEWORK": "cljs-reagent-re-frame-jp-go-dds",
     "APP_NANOID": "pl4y1t8r",
     "APP_PERFORMER_TYPE": "service",
     "APP_SOURCE": "custom",
@@ -40,7 +48,7 @@
     }
   ],
   "assets": {
-    "directory": "./svelte/.svelte-kit/cloudflare/client",
+    "directory": "./cljs/public",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"

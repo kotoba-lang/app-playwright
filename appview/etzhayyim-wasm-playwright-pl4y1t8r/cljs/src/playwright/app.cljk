@@ -53,7 +53,7 @@
           "APP_FRAMEWORK" "APP_NANOID" "APP_PERFORMER_TYPE" "APP_SOURCE"
           "APP_UI_TYPE" "APP_VERSION" "INTERFACES_REQUIRES"]
    :xrpc? true
-   :relative-path "appview/etzhayyim-wasm-playwright-pl4y1t8r/cljs/src/playwright/app.cljs"})
+   :relative-path "appview/etzhayyim-wasm-playwright-pl4y1t8r/cljs/src/playwright/app.cljk"})
 
 (rf/reg-event-db
  :initialize-db

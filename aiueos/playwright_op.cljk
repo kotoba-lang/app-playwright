@@ -1,0 +1,68 @@
+(ns playwright.op
+  "playwright primitive 判定コア — itonami dapp bundle（pure, :effects #{}）。
+
+  ブラウザ自動化 primitive の判定（正本: AGENTS.md の XRPC surface +
+  daemon/src/ops.ts）:
+
+  - **破壊度**: 11 method のうち 10 は safe、**evaluate のみ moderate**
+    （JS 実行 = allowlist 制限）。
+  - **valueRef の scheme は 3 つ**: vault://（どこでも）/ keychain: /
+    1password://（**local daemon のみ**）。
+  - **fill は value か valueRef のどちらか必須**（両無しは拒否）。
+  - **1 XRPC 呼び出し = 1 行（append-only audit）**。
+  - recipe / orchestration は**持たない**（BPMN actor の責務）。
+
+  eval-judgment: 1 = allowlist 内 / 0 = 拒否（moderate = 制限付き）
+  valueref-ok: 1 = scheme と実行場所が合う / 0 = 不正（local 専用 scheme を
+    remote で使おうとした等）
+  fill-admission: 1 = value か valueref がある / 0 = 両無し
+  audit-ok: 1 = 1 呼び出し 1 行の append-only
+
+  実行 host はスカラーのみ = KIR v3 / i64/direct ABI（kernel/selfhost 両対応）。
+
+  テストはゼロ引数 test-*、戻り 1/0:
+  <amu> test aiueos/playwright_op.cljk"
+  (:export [main eval-judgment valueref-ok fill-admission audit-ok
+            test-eval test-scheme test-fill test-audit test-fail-closed]))
+
+(defn main [] :i64
+  0)
+
+(defn eval-judgment [is-evaluate :i64 allowlisted :i64] :i64
+  (if (= is-evaluate 0)
+    1
+    (if (= allowlisted 1) 1 0)))
+
+(defn valueref-ok [scheme-code :i64 is-local :i64] :i64
+  ;; 0 vault（どこでも）/ 1 keychain / 2 1password（local のみ）
+  (if (= scheme-code 0)
+    1
+    (if (and (or (= scheme-code 1) (= scheme-code 2)) (= is-local 1)) 1 0)))
+
+(defn fill-admission [has-value :i64 has-valueref :i64] :i64
+  (if (or (= has-value 1) (= has-valueref 1)) 1 0))
+
+(defn audit-ok [one-row-per-call :i64 append-only :i64] :i64
+  (if (and (= one-row-per-call 1) (= append-only 1)) 1 0))
+
+;; --- tests（戻り 1 = pass） ------------------------------------------------
+
+(defn test-eval [] :i64
+  ;; 10 method は safe、evaluate のみ moderate（allowlist 制限）
+  (if (= (+ (eval-judgment 0 0) (eval-judgment 1 1) (eval-judgment 1 0)) 2) 1 0))
+
+(defn test-scheme [] :i64
+  ;; keychain / 1password は local daemon のみ
+  (if (= (+ (valueref-ok 0 0) (valueref-ok 1 1) (valueref-ok 1 0) (valueref-ok 2 0)) 2) 1 0))
+
+(defn test-fill [] :i64
+  ;; value か valueRef のどちらか必須
+  (if (= (+ (fill-admission 1 0) (fill-admission 0 1) (fill-admission 1 1) (fill-admission 0 0)) 3) 1 0))
+
+(defn test-audit [] :i64
+  ;; 1 XRPC 呼び出し = 1 行（append-only audit）
+  (if (= (+ (audit-ok 1 1) (audit-ok 1 0) (audit-ok 0 1)) 1) 1 0))
+
+(defn test-fail-closed [] :i64
+  ;; local 専用 scheme は remote で使わせない
+  (if (= (+ (valueref-ok 2 0) (valueref-ok 3 1)) 0) 1 0))

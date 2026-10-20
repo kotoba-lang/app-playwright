@@ -1,0 +1,19 @@
+;; app-playwright — itonami（dapp）の aiueos アプリ記述子（notes.edn 形）。
+;; 判定コアは aiueos/playwright_op.cljk（primitive の破壊度・valueRef・監査）。
+;; 正本は AGENTS.md の XRPC surface + daemon/src/ops.ts。pure（:effects #{}）。
+;; recipe / orchestration は持たない（BPMN actor の責務）。
+{:aiueos/component :app/playwright-op
+ :aiueos/kind :app
+ :aiueos/trust :untrusted
+ :aiueos/source "playwright_op.cljk"
+ :aiueos/wasm "playwright_op.wasm"
+ :aiueos/entry "main"
+ :aiueos/args []
+ :aiueos/imports #{}
+ :aiueos/exports #{:app/main
+                   :app/eval-judgment
+                   :app/valueref-ok
+                   :app/fill-admission
+                   :app/audit-ok}
+ :aiueos/effects #{}
+ :aiueos/limits {:memory-pages 16 :fuel 5000000}}

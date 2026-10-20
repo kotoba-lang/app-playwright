@@ -1,0 +1,31 @@
+(ns playwright.op-parity-test
+  "aiueos/playwright_op.cljk（判定コア）と正本（AGENTS.md の XRPC surface +
+  daemon/src/ops.ts）の parity。破壊度・valueRef scheme・fill 規則・
+  監査形が変われば落ちる drift 検査。"
+  (:require [clojure.test :refer [deftest is testing]]
+            [clojure.string :as str]
+            ["fs" :as fs]))
+
+(def agents (fs/readFileSync "AGENTS.md" "utf8"))
+(def ops-src
+  (fs/readFileSync (str/join "/" ["daemon" "src" "ops.ts"]) "utf8"))
+
+(deftest destructiveness-matches-guest
+  (testing "guest test-eval: evaluate のみ moderate（allowlist 制限）"
+    (is (str/includes? agents "moderate"))
+    (is (str/includes? agents "allowlist"))
+    (is (str/includes? agents "safe"))))
+
+(deftest valueref-matches-guest
+  (testing "guest test-scheme / test-fail-closed: scheme 3 つ、keychain/1password は local のみ"
+    (is (str/includes? agents "vault://"))
+    (is (str/includes? agents "keychain:"))
+    (is (str/includes? agents "1password://"))
+    (is (str/includes? agents "local daemon のみ")))
+  (testing "guest test-fill: fill は value か valueRef のどちらか必須"
+    (is (str/includes? ops-src "fill requires either value or valueRef"))))
+
+(deftest audit-matches-guest
+  (testing "guest test-audit: 1 XRPC 呼び出し = 1 行（append-only audit）"
+    (is (str/includes? agents "append-only audit"))
+    (is (str/includes? agents "1 XRPC call = 1 row"))))
